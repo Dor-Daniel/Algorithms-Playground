@@ -96,3 +96,24 @@ The way i check which one is better is using the following:
 $$ \left|\frac{BOTTOM_w}{BOTTOM_h} - 1\right| + \left|\frac{LEFT_w}{LEFT_h} - 1\right|$$
 
 The option in which this expression is the smallest is the one i choose.
+
+## Quick Start
+
+**Important** Make sure gcc is set as environment variable & [Here](bin-packing-2D/build.cmd) change the 
+```batch
+set raylib_path=C:/raylib/raylib/src
+```
+to the correct path.
+
+Then you can run
+*Debug build*
+```powershell
+.\bin-packing-2D\build.cmd d
+.\bin\bin-packing-dbg.exe
+
+```
+*Release build*
+```powershell
+.\bin-packing-2D\build.cmd r
+.\bin\bin-packing-rel.exe
+```
