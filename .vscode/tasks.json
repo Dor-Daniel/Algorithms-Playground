@@ -1,0 +1,60 @@
+{
+    "version": "2.0.0",
+    "tasks" : 
+    [
+        {
+            "type": "shell",
+            "label": "Build Debug (Bin-Packing-2D)",
+            "command": "${workspaceFolder}\\bin-packing-2D\\build.cmd",
+            "args": [ "d" ],
+            "problemMatcher": [ "$gcc" ],
+            "group": "build"
+        },
+        {
+            "type": "shell",
+            "label": "Build Release (Bin-Packing-2D)",
+            "command": "${workspaceFolder}\\bin-packing-2D\\build.cmd",
+            "args": [ "r" ],
+            "problemMatcher": [ "$gcc" ],
+            "group": "build"
+        },
+        {
+            "type": "shell",
+            "label": "Run Release (Bin-Packing-2D)",
+            "command": "${workspaceFolder}\\bin\\bin-packing-2D-rel.exe",
+            "args": [ ],
+            "problemMatcher": [ "$gcc" ],
+            "group": "build"
+        },
+        {
+            "type": "shell",
+            "label": "Run Debug (Bin-Packing-2D)",
+            "command": "${workspaceFolder}\\bin\\bin-packing-2D-dbg.exe",
+            "args": [ ],
+            "problemMatcher": [ "$gcc" ],
+            "group": "build"
+        },
+        {
+            "type": "shell",
+            "label": "Build & Run Debug (Bin-Packing-2D)",
+            "command": "${workspaceFolder}\\bin-packing-2D\\build.cmd d && .\\bin\\bin-packing-2D-dbg.exe",
+            "args": [ ],
+            "problemMatcher": [ "$gcc" ],
+            "group": "build"
+        },
+        {
+            "type": "shell",
+            "label": "Build & Run Release (Bin-Packing-2D)",
+            "command": "${workspaceFolder}\\bin-packing-2D\\build.cmd r && .\\bin\\bin-packing-2D-rel.exe",
+            "args": [ ],
+            "problemMatcher": [ "$gcc" ],
+            "group": "build"
+            // "presentation": {
+            //     "reveal": "never",
+            //     "revealProblems": "never",
+            //     "focus": false,
+            //     "panel": "build"
+            // }
+        }
+    ]
+}

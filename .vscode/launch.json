@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug (Bin-Packing-2D)",
+            "type": "cppdbg",
+            "program": "${workspaceFolder}bin\\bin\bin-packing-2D-dbg.exe",
+            "args": [ ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+
+            "miDebuggerPath":"C:\\msys64\\new_install\\usr\\bin\\gdb.exe",
+            "preLaunchTask": "Build Debug (Bin-Packing-2D)",
+            "request": "launch"
+        }
+    ]
+}
