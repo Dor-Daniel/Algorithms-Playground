@@ -57,15 +57,15 @@ Node root = {
     .available = true
 };
 
-static void init_rects(void);
-static bool pop_rect_rec(Node* n, Rectangle rect);
-static bool push_rect_rec(Node* n, Rect r, Rectangle* out_rect);
-static void draw_nodes(Node* n);
-static void clear_tree_rec(Node* root);
+static void populate_rects_with_random_vals(void);
+static bool remove_rect_from_tree_rec(Node* n, Rectangle rect);
+static bool add_ct_to_tree_rec(Node* n, Rect r, Rectangle* out_rect);
+static void draw_tree(Node* n);
+static void clear_subtree(Node* root);
 
-#define clear_tree() clear_tree_rec(&root)
-#define pop_rect(rect) pop_rect_rec(&root, rect)
-#define push_rect(rect, out_rect) push_rect_rec(&root, rect, out_rect)
+#define clear_entire_tree() clear_subtree(&root)
+#define remove_rect_from_tree(rect) remove_rect_from_tree_rec(&root, rect)
+#define add_rect_to_tree(rect, out_rect) add_ct_to_tree_rec(&root, rect, out_rect)
 
 int main(int argc, char* argv[])
 {
@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE);
     SetTargetFPS(60);
     
-    init_rects();
+    populate_rects_with_random_vals();
     
     size_t rects_count = 0;
     size_t iteration = 0;
@@ -93,7 +93,7 @@ int main(int argc, char* argv[])
         {
             if (iteration < RECTS_COUNT)
             {
-                bool res = push_rect(rects[ iteration ], &rectangles[ rects_count ]);
+                bool res = add_rect_to_tree(rects[ iteration ], &rectangles[ rects_count ]);
                 if (!res) printlnc(C_ANSI_COLOR_RED, "Insertion failed!");
                 else printlnc(
                     C_ANSI_COLOR_GREEN,
@@ -114,7 +114,7 @@ int main(int argc, char* argv[])
                 int i = GetRandomValue(0, rects_count - 1);
                 Rectangle to_remove = rectangles[ i ];
                 rectangles[ i ] = rectangles[ --rects_count ];
-                bool res = pop_rect(to_remove);
+                bool res = remove_rect_from_tree(to_remove);
                 if (!res) printlnc(C_ANSI_COLOR_RED, "Removal failed!");
                 else printlnc(
                     C_ANSI_COLOR_GREEN,
@@ -135,7 +135,7 @@ int main(int argc, char* argv[])
         {
             ClearBackground(BG_COLOR);
 
-            draw_nodes(&root);
+            draw_tree(&root);
 
             for (size_t i = 0; i < rects_count; i++)
             {
@@ -145,14 +145,14 @@ int main(int argc, char* argv[])
         }
     }
 
-    clear_tree();
+    clear_entire_tree();
 
     CloseWindow();
 
     return 0;
 }
 
-static bool push_rect_rec(Node* n, Rect r, Rectangle* out_rect)
+static bool add_ct_to_tree_rec(Node* n, Rect r, Rectangle* out_rect)
 {
     if (!n) return false;
 
@@ -216,10 +216,10 @@ static bool push_rect_rec(Node* n, Rect r, Rectangle* out_rect)
         return true;
     }
     
-    return (n->left && push_rect_rec(n->left, r, out_rect)) || (n->bottom && push_rect_rec(n->bottom, r, out_rect));
+    return (n->left && add_ct_to_tree_rec(n->left, r, out_rect)) || (n->bottom && add_ct_to_tree_rec(n->bottom, r, out_rect));
 }
 
-static bool pop_rect_rec(Node* n, Rectangle rect)
+static bool remove_rect_from_tree_rec(Node* n, Rectangle rect)
 {
     if (n && n->pos.x == rect.x && n->pos.y == rect.y && n->rect.wh.x == rect.width && n->rect.wh.y == rect.height)
     {
@@ -228,18 +228,18 @@ static bool pop_rect_rec(Node* n, Rectangle rect)
         return res;
     }
 
-    return (n->left && pop_rect_rec(n->left, rect)) || (n->bottom && pop_rect_rec(n->bottom, rect));
+    return (n->left && remove_rect_from_tree_rec(n->left, rect)) || (n->bottom && remove_rect_from_tree_rec(n->bottom, rect));
 }
 
-static void draw_nodes(Node* n)
+static void draw_tree(Node* n)
 {
     if (!n) return;
     DrawRectangleLinesEx((Rectangle){n->pos.x, n->pos.y, n->rect.wh.x, n->rect.wh.y}, 3, RED);
-    draw_nodes(n->left);
-    draw_nodes(n->bottom);
+    draw_tree(n->left);
+    draw_tree(n->bottom);
 }
 
-static inline void init_rects(void)
+static inline void populate_rects_with_random_vals(void)
 {
     SetRandomSeed(time(0));
 
@@ -251,18 +251,18 @@ static inline void init_rects(void)
     }
 }
 
-static void clear_tree_rec(Node* root)
+static void clear_subtree(Node* root)
 {
     if (root)
     {
         if (root->left)
         {
-            clear_tree_rec(root->left);
+            clear_subtree(root->left);
             free(root->left);
         }
         if (root->bottom) 
         {
-            clear_tree_rec(root->bottom);
+            clear_subtree(root->bottom);
             free(root->bottom);
         }
     }
