@@ -1,8 +1,9 @@
 @echo off
 
 set compiler=gcc
-set lib_dirs=-LC:/raylib/raylib/src
-set include_dir=-IC:/raylib/raylib/src
+set raylib_path=C:/raylib/raylib/src
+set lib_dirs=-L%raylib_path%
+set include_dir=-I%raylib_path%
 set libs=-lraylib -lopengl32 -lgdi32 -lwinmm
 
 if %1==d (
