@@ -1,3 +1,14 @@
+/**
+ * @file main.c
+ * @author Dor Daniel
+ * @brief This file uses raylib in order to visualize the way we solve The 2D-Bin-Packing problem
+ * @version 0.1
+ * @date 2026-10-27
+ * 
+ * @copyright Copyright (c) 2026 See License at ../LICENSE (MIT)
+ * 
+ */
+
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
@@ -57,15 +68,55 @@ Node root = {
     .available = true
 };
 
+/**
+ * @brief Populate the global rects array with random values.
+ * 
+ */
 static void populate_rects_with_random_vals(void);
-static bool remove_rect_from_tree_rec(Node* n, Rectangle rect);
-static bool add_ct_to_tree_rec(Node* n, Rect r, Rectangle* out_rect);
-static void draw_tree(Node* n);
-static void clear_subtree(Node* root);
 
-#define clear_entire_tree() clear_subtree(&root)
+/**
+ * @brief Finds the rect in the global tree and if it exsists it removes it.
+ * 
+ * @param n the root of the subtree to search
+ * @param rect the rect to remove
+ * @return true when the rect exists and indeed deleted.
+ * @return false when the rect dows not found. 
+ */
+static bool remove_rect_from_tree_rec(Node* n, Rectangle rect);
+/**
+ * @brief Adds the rectangle to the tree if possible.
+ * 
+ * @param n the subtree to insert the rectangle to.
+ * @param r the rectangle to insert
+ * @param out_rect the position and size of the positioned rectangle 
+ *      If this parameter is `NULL` we ignore it.
+ *      If the function fails this parameter never populated
+ * @return true if the function succeeds and the rectangle is inserted.
+ * @return false if the function fails (There is no room th insert a new rectangle in those dimensions)
+ */
+static bool add_rect_to_tree_rec(Node* n, Rect r, Rectangle* out_rect);
+
+/**
+ * @brief Drawing the tree. We draw all free sections with red lines and the occupied ones with the given color.
+ * 
+ * @param n The root of the subtree to draw.
+ */
+static void draw_tree(Node* n);
+
+/**
+ * @brief Destroying the subtree and freeing all reasources allocated.
+ * 
+ * @param root The root of the subtree to deallocate
+ * NOTE: The root is NOT being deallocated.
+ */
+static void destroy_subtree(Node* root);
+
+/**
+ * @brief Wrappers for better readability and ease of use.
+ */
+#define destroy_entire_tree() destroy_subtree(&root)
 #define remove_rect_from_tree(rect) remove_rect_from_tree_rec(&root, rect)
-#define add_rect_to_tree(rect, out_rect) add_ct_to_tree_rec(&root, rect, out_rect)
+#define add_rect_to_tree(rect, out_rect) add_rect_to_tree_rec(&root, rect, out_rect)
 
 int main(int argc, char* argv[])
 {
@@ -145,14 +196,14 @@ int main(int argc, char* argv[])
         }
     }
 
-    clear_entire_tree();
+    destroy_entire_tree();
 
     CloseWindow();
 
     return 0;
 }
 
-static bool add_ct_to_tree_rec(Node* n, Rect r, Rectangle* out_rect)
+static bool add_rect_to_tree_rec(Node* n, Rect r, Rectangle* out_rect)
 {
     if (!n) return false;
 
@@ -216,7 +267,7 @@ static bool add_ct_to_tree_rec(Node* n, Rect r, Rectangle* out_rect)
         return true;
     }
     
-    return (n->left && add_ct_to_tree_rec(n->left, r, out_rect)) || (n->bottom && add_ct_to_tree_rec(n->bottom, r, out_rect));
+    return (n->left && add_rect_to_tree_rec(n->left, r, out_rect)) || (n->bottom && add_rect_to_tree_rec(n->bottom, r, out_rect));
 }
 
 static bool remove_rect_from_tree_rec(Node* n, Rectangle rect)
@@ -258,18 +309,18 @@ static inline void populate_rects_with_random_vals(void)
     }
 }
 
-static void clear_subtree(Node* root)
+static void destroy_subtree(Node* root)
 {
     if (root)
     {
         if (root->left)
         {
-            clear_subtree(root->left);
+            destroy_subtree(root->left);
             free(root->left);
         }
         if (root->bottom) 
         {
-            clear_subtree(root->bottom);
+            destroy_subtree(root->bottom);
             free(root->bottom);
         }
     }
