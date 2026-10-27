@@ -4,7 +4,7 @@
         {
             "name": "Debug (Bin-Packing-2D)",
             "type": "cppdbg",
-            "program": "${workspaceFolder}bin\\bin\bin-packing-2D-dbg.exe",
+            "program": "${workspaceFolder}\\bin\\bin-packing-2D-dbg.exe",
             "args": [ ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
