@@ -137,11 +137,11 @@ int main(int argc, char* argv[])
 
             draw_tree(&root);
 
-            for (size_t i = 0; i < rects_count; i++)
-            {
-                DrawRectangleRec(rectangles[ i ], rects[ i ].col);
-                DrawRectangleLinesEx(rectangles[ i ], 5, WHITE);
-            }
+            // for (size_t i = 0; i < rects_count; i++)
+            // {
+            //     DrawRectangleRec(rectangles[ i ], rects[ i ].col);
+            //     DrawRectangleLinesEx(rectangles[ i ], 5, WHITE);
+            // }
         }
     }
 
@@ -234,7 +234,14 @@ static bool remove_rect_from_tree_rec(Node* n, Rectangle rect)
 static void draw_tree(Node* n)
 {
     if (!n) return;
-    DrawRectangleLinesEx((Rectangle){n->pos.x, n->pos.y, n->rect.wh.x, n->rect.wh.y}, 3, RED);
+    if (n->available)
+    {
+        DrawRectangleLinesEx((Rectangle){n->pos.x, n->pos.y, n->rect.wh.x, n->rect.wh.y}, 1, RED);
+    }
+    else
+    {
+        DrawRectangleRec((Rectangle){n->pos.x, n->pos.y, n->rect.wh.x, n->rect.wh.y}, n->rect.col);
+    }
     draw_tree(n->left);
     draw_tree(n->bottom);
 }
