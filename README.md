@@ -6,6 +6,7 @@ This Repo is meant for use as a playground for testing different kinds of algori
 
 ## [Bin Packing 2D](bin-packing-2D/main.c)
 
+## Guillotine approach
 ![Bin Packing 2D Demo](wiki/guillotine.gif)
 
 ### Problem
