@@ -1,14 +1,3 @@
-/**
- * @file main.c
- * @author Dor Daniel
- * @brief This file uses raylib in order to visualize the way we solve The 2D-Bin-Packing problem
- * @version 0.1
- * @date 2026-10-27
- * 
- * @copyright Copyright (c) 2026 See License at ../LICENSE (MIT)
- * 
- */
-
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
@@ -67,53 +56,15 @@ Node root = {
     .left = NULL,
     .available = true
 };
-
-/**
- * @brief Populate the global rects array with random values.
- * 
- */
 static void populate_rects_with_random_vals(void);
 
-/**
- * @brief Finds the rect in the global tree and if it exsists it removes it.
- * 
- * @param n the root of the subtree to search
- * @param rect the rect to remove
- * @return true when the rect exists and indeed deleted.
- * @return false when the rect dows not found. 
- */
 static bool remove_rect_from_tree_rec(Node* n, Rectangle rect);
-/**
- * @brief Adds the rectangle to the tree if possible.
- * 
- * @param n the subtree to insert the rectangle to.
- * @param r the rectangle to insert
- * @param out_rect the position and size of the positioned rectangle 
- *      If this parameter is `NULL` we ignore it.
- *      If the function fails this parameter never populated
- * @return true if the function succeeds and the rectangle is inserted.
- * @return false if the function fails (There is no room th insert a new rectangle in those dimensions)
- */
 static bool add_rect_to_tree_rec(Node* n, Rect r, Rectangle* out_rect);
 
-/**
- * @brief Drawing the tree. We draw all free sections with red lines and the occupied ones with the given color.
- * 
- * @param n The root of the subtree to draw.
- */
 static void draw_tree(Node* n);
 
-/**
- * @brief Destroying the subtree and freeing all reasources allocated.
- * 
- * @param root The root of the subtree to deallocate
- * NOTE: The root is NOT being deallocated.
- */
 static void destroy_subtree(Node* root);
 
-/**
- * @brief Wrappers for better readability and ease of use.
- */
 #define destroy_entire_tree() destroy_subtree(&root)
 #define remove_rect_from_tree(rect) remove_rect_from_tree_rec(&root, rect)
 #define add_rect_to_tree(rect, out_rect) add_rect_to_tree_rec(&root, rect, out_rect)
