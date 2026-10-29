@@ -27,7 +27,7 @@ You can check out the [wikipidia](https://en.wikipedia.org/wiki/Guillotine_cutti
 
 ### Solution 2 The Skyline algorithm
 
-I could not find a good & simple resource online for that but it is easy to understand you just drop the rectangle on the skyline and find the place where if it falls it will minimize the hieght increament.
+I could not find a good & simple resource online for that but it is easy to understand you just drop the rectangle on the skyline and find the place where if it falls it will minimize the height increament.
 
 ## Quick Start
 
