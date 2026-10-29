@@ -6,8 +6,11 @@ This Repo is meant for use as a playground for testing different kinds of algori
 
 ## [Bin Packing 2D](bin-packing-2D/main.c)
 
-## Guillotine approach
+## Guillotine approach (Offline-Sorted)
 ![Bin Packing 2D Demo](wiki/guillotine.gif)
+
+## Skyline approach (online-Unsorted)
+![Bin Packing 2D Demo](wiki/skyline.gif)
 
 ### Problem
 

@@ -30,6 +30,8 @@
 
 #define ERROR(...) printlnc(C_ANSI_COLOR_RED, __VA_ARGS__)
 #define INFO(...) printlnc(C_ANSI_COLOR_GREEN, __VA_ARGS__)
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
 
 #define WINDOW_TITLE "Bin-Packing 2D"
 #define WINDOW_WIDTH 1200
@@ -42,10 +44,17 @@
 #define RECTS_TO_PLACE_MIN_H 10
 #define RECTS_TO_PLACE_MAX_H 100
 #define RECTS_PLACED_COLOR RAYWHITE
+#define SHOULD_SORT false
+#define UNIFORM_SIZE false
 
 typedef struct Rect {
     float w, h;
 } Rect;
+
+typedef struct SkyNode {
+    Vector2 position;
+    struct SkyNode * next;
+} SkyNode;
 
 static struct GlobalContext {
     enum AlgorithmType {
@@ -54,44 +63,38 @@ static struct GlobalContext {
         ALGORITHM_TYPE_SKYLINE,
         ALGORITHM_TYPE_COUNT
     } alg_type;
+    bool pause;
     Rect rects_to_place[ RECTS_TO_PLACE_COUNT ];
     size_t rects_placed_count;
     Rectangle rects_placed [ RECTS_TO_PLACE_COUNT ];
-    union AlgorithmData {
-        struct Guillotine {
-            size_t available_rects_count, available_rects_capacity;
-            Rectangle* available_rects;
-        } guillotine;
-        struct Skyline {
-
-        } skyline;
-    } data;
+    size_t available_rects_count, available_rects_capacity;
+    Rectangle* available_rects;
+    bool finish;
+    SkyNode* skyline;
 } ctx;
 
 static void update(void);
 static void handle_input(void);
 static void draw_menu(void);
 static void randomize_rects_to_place(void);
+
 static void place_rectangle_g(void);
 static void place_rectangle_s(void);
-static void visualize_s(void);
-static void visualize_g(void);
-static void init_s(void);
-static void init_g(void);
-static void clear_s(void);
-static void clear_g(void);
+
+static void visualize(void);
+static void init(void);
+static void clear(void);
+
+static void append_available_rect(Rectangle rect);
+static void remove_available_rect(size_t idx);
 
 int main (void)
 {
-    INFO("Starting...");
-    ERROR("Error...");
 #ifdef NO_PRINTS
     SetTraceLogLevel(LOG_NONE);
 #endif
     InitWindow(WINDOW_WIDTH + 100, WINDOW_HEIGHT + 100, WINDOW_TITLE);
     SetTargetFPS(TARGET_FPS);
-    
-    
     
     while (!WindowShouldClose())
     {
@@ -105,36 +108,70 @@ int main (void)
             {
                 draw_menu();
             }
-            else if (ctx.alg_type == ALGORITHM_TYPE_GUILLOTINE)
+            else
             {
-                visualize_g();
-            }
-            else if (ctx.alg_type == ALGORITHM_TYPE_SKYLINE)
-            {
-                visualize_s();
+                visualize();
             }
         }
     }
 }
 
-static void clear_s(void)
+static inline void append_available_rect(Rectangle rect)
 {
+    assert(ctx.available_rects);
 
+    if (ctx.available_rects_capacity <= ctx.available_rects_count + 2)
+    {
+        size_t new_cap = MAX(32, ctx.available_rects_capacity * 2);
+        void * new_block = realloc(ctx.available_rects, new_cap * sizeof(Rectangle));
+        if (!new_block)
+        {
+            ERROR("FATAL - Could not realloc memory... But more RAM!!, Crashing...");
+            exit(1);
+        }
+        ctx.available_rects = (Rectangle*)new_block;
+        ctx.available_rects_capacity = new_cap;
+    }
+
+    ctx.available_rects[ctx.available_rects_count++] = rect;
 }
 
-static void clear_g(void)
+static inline void remove_available_rect(size_t idx)
 {
-    free(ctx.data.guillotine.available_rects);
-    ctx.data.guillotine.available_rects          = NULL;
-    ctx.data.guillotine.available_rects_capacity = 0;
-    ctx.data.guillotine.available_rects_count    = 0;
-    ctx.rects_placed_count                       = 0;
+    assert(ctx.available_rects && ctx.available_rects_count > 0);
+
+    if (ctx.available_rects_count == 1)
+    {
+        ctx.available_rects_count = 0;
+        return;
+    }
+
+    ctx.available_rects[ idx ] = ctx.available_rects[--ctx.available_rects_count];
 }
 
-static void init_s(void)
+static void clear(void)
 {
-    randomize_rects_to_place();
-
+    if (ctx.alg_type == ALGORITHM_TYPE_GUILLOTINE)
+    {
+        if (ctx.available_rects) free(ctx.available_rects);
+        ctx.available_rects          = NULL;
+        ctx.available_rects_capacity = 0;
+        ctx.available_rects_count    = 0;
+        ctx.rects_placed_count       = 0;
+    }
+    else if (ctx.alg_type == ALGORITHM_TYPE_SKYLINE)
+    {
+        SkyNode* parent = ctx.skyline;
+        if (!parent) return;
+        SkyNode* child = parent->next;
+        while (child)
+        {
+            parent->next = child->next;
+            free(child);
+            child = parent->next;
+        }
+        free(parent);
+    }
 }
 
 static int compare_Rect(const void* a, const void* b)
@@ -144,42 +181,62 @@ static int compare_Rect(const void* a, const void* b)
     return r2.w * r2.h - r1.w * r1.h; 
 }
 
-static void init_g(void)
+static void init(void)
 {
-    randomize_rects_to_place();
-    qsort(ctx.rects_to_place, RECTS_TO_PLACE_COUNT, sizeof(Rect), compare_Rect);
-    const size_t initial_capacity = 32ULL;
-    ctx.data.guillotine.available_rects = malloc(sizeof(Rectangle) * initial_capacity);
-    ctx.data.guillotine.available_rects_capacity = initial_capacity;
-    ctx.data.guillotine.available_rects[ ctx.data.guillotine.available_rects_count ++ ] = (Rectangle){
-        .x = 0,
-        .y = 0,
-        .width = WINDOW_WIDTH,
-        .height = WINDOW_HEIGHT
-    };
+    if (ctx.alg_type == ALGORITHM_TYPE_GUILLOTINE)
+    {
+        randomize_rects_to_place();
+        if (SHOULD_SORT) qsort(ctx.rects_to_place, RECTS_TO_PLACE_COUNT, sizeof(Rect), compare_Rect);
+        const size_t initial_capacity = 32ULL;
+        ctx.available_rects = malloc(sizeof(Rectangle) * initial_capacity);
+        ctx.available_rects_capacity = initial_capacity;
+        append_available_rect((Rectangle){.x = 0, .y = 0, .width = WINDOW_WIDTH, .height = WINDOW_HEIGHT });
+    }
+    else if (ctx.alg_type == ALGORITHM_TYPE_SKYLINE)
+    {
+        randomize_rects_to_place();
+        if (SHOULD_SORT) qsort(ctx.rects_to_place, RECTS_TO_PLACE_COUNT, sizeof(Rect), compare_Rect);
+        ctx.skyline = malloc(sizeof(SkyNode));
+        ctx.skyline->next = NULL;
+        ctx.skyline->position = Vector2Zero();
+    }
 }
 
-static void visualize_s(void)
-{
-
-}
-
-static void visualize_g(void)
+static void visualize(void)
 {
     for (size_t i = 0; i < ctx.rects_placed_count; i++)
     {
         DrawRectangleRec(ctx.rects_placed[ i ], RECTS_PLACED_COLOR);
         DrawRectangleLinesEx(ctx.rects_placed[ i ], 1, BLACK);
     }
-    for (size_t i = 0; i < ctx.data.guillotine.available_rects_count; i++)
+    
+    if (ctx.alg_type == ALGORITHM_TYPE_GUILLOTINE)
     {
-        DrawRectangleLinesEx(ctx.data.guillotine.available_rects[ i ], 1, RED);
+        for (size_t i = 0; i < ctx.available_rects_count; i++)
+        {
+            DrawRectangleLinesEx(ctx.available_rects[ i ], 1, RED);
+        }
+    }
+    else if (ctx.alg_type == ALGORITHM_TYPE_SKYLINE)
+    {
+        SkyNode* start = ctx.skyline;
+        if (!start) return;
+        SkyNode* next = start->next;
+        while (next)
+        {
+            DrawLineEx(start->position, (Vector2){next->position.x, start->position.y }, 3, RED);
+            DrawLineEx((Vector2){next->position.x, start->position.y }, next->position, 3, RED);
+            start = next;
+            next = start->next;
+        }
+        DrawLineEx(start->position, (Vector2){WINDOW_WIDTH, 0},3, RED);
     }
 }
 
 static void place_rectangle_g(void)
 {
-    assert(ctx.data.guillotine.available_rects);
+    assert(ctx.available_rects);
+
     if (ctx.rects_placed_count >= RECTS_TO_PLACE_COUNT)
     {
         INFO("There is no rects to place, Try increasing the value of 'RECTS_TO_PLACE_COUNT'");
@@ -190,9 +247,9 @@ static void place_rectangle_g(void)
     Rectangle best = { .x = -1 };
     size_t best_idx = 0;
 
-    for (size_t i = 0; i < ctx.data.guillotine.available_rects_count; i++)
+    for (size_t i = 0; i < ctx.available_rects_count; i++)
     {
-        Rectangle curr = ctx.data.guillotine.available_rects[ i ];
+        Rectangle curr = ctx.available_rects[ i ];
         if (to_place.h <= curr.height && to_place.w <= curr.width)
         {
             float current = fminf(curr.height - to_place.h, curr.width - to_place.w);
@@ -208,9 +265,9 @@ static void place_rectangle_g(void)
     }
     bool rotated = false;
     Rect to_place_rotated = { .w = to_place.h, .h = to_place.w };
-    for (size_t i = 0; i < ctx.data.guillotine.available_rects_count; i++)
+    for (size_t i = 0; i < ctx.available_rects_count; i++)
     {
-        Rectangle curr = ctx.data.guillotine.available_rects[ i ];
+        Rectangle curr = ctx.available_rects[ i ];
         if (to_place_rotated.h <= curr.height && to_place_rotated.w <= curr.width)
         {
             float current = fminf(curr.height - to_place_rotated.h, curr.width - to_place_rotated.w);
@@ -230,7 +287,8 @@ static void place_rectangle_g(void)
     {
         // Failed to insert
         ERROR("Failed to insert rectangle.");
-          return;
+        ctx.finish = true;
+        return;
     }
 
     Rectangle left = { 0 }, bottom = { 0 };
@@ -271,23 +329,77 @@ static void place_rectangle_g(void)
     ctx.rects_placed[ ctx.rects_placed_count++ ] = rotated ? 
          (Rectangle){ .x = best.x, .y = best.y, .width = to_place.h, .height = to_place.w } :
          (Rectangle){ .x = best.x, .y = best.y, .width = to_place.w, .height = to_place.h };
-    ctx.data.guillotine.available_rects[ best_idx ] = left;
+    ctx.available_rects[ best_idx ] = left;
 
-    if (ctx.data.guillotine.available_rects_capacity <= ctx.data.guillotine.available_rects_count)
-    {  
-        size_t new_cap = ctx.data.guillotine.available_rects_capacity * 2;
-        void * new_block = realloc(ctx.data.guillotine.available_rects, new_cap * sizeof(Rectangle));
-        assert(new_block);
-        ctx.data.guillotine.available_rects = new_block;
-        ctx.data.guillotine.available_rects_capacity = new_cap;
-    }
-
-    ctx.data.guillotine.available_rects[ ctx.data.guillotine.available_rects_count++ ] = bottom;
+    append_available_rect(bottom);
 }
 
 static void place_rectangle_s(void)
 {
+    Rect to_place = ctx.rects_to_place[ctx.rects_placed_count];
+    SkyNode* best = NULL;
 
+    SkyNode* parent = ctx.skyline;
+    while (parent)
+    {
+        SkyNode * next = parent->next;
+        while (next && next->position.y <= parent->position.y)
+        {
+            next = next->next;
+        }
+        float width = next ? next->position.x - parent->position.x : WINDOW_WIDTH - parent->position.x; 
+
+        float height = WINDOW_HEIGHT - parent->position.y;
+        if (width >= to_place.w && height >= to_place.h)
+        {
+            if (!best || parent->position.y < best->position.y)
+            {
+                best = parent;
+            }
+            else if (parent->position.y == best->position.y)
+            {
+                if (parent->position.x < best->position.x)
+                {
+                    best = parent;
+                }
+            }
+        }
+        parent = parent->next;
+    }
+
+    if (!best)
+    {
+        ERROR("Could not place rectangle %zu", ctx.rects_placed_count);
+        ctx.finish = true;
+        return;
+    }
+
+    ctx.rects_placed[ctx.rects_placed_count++] = (Rectangle){ .x = best->position.x, .y = best->position.y, .width = to_place.w, .height = to_place.h };
+
+    SkyNode top = { .position = (Vector2){ .x = best->position.x, .y = best->position.y + to_place.h }, .next = NULL };
+    SkyNode left = { .position = (Vector2){ .x = best->position.x + to_place.w, .y = best->position.y }, .next = NULL };
+
+    SkyNode* bn = best->next;
+    while(bn && bn->position.x < best->position.x + to_place.w)
+    {
+        best->next = bn->next;
+        free(bn);
+        bn = best->next;
+    }
+
+    bool should_add_left = !bn || (bn->position.y != left.position.y);
+
+    *best = top;
+    if(should_add_left)
+    {
+        best->next = malloc(sizeof(SkyNode));
+        *(best->next) = left;
+        best->next->next = bn;
+    }
+    else
+    {
+        best->next = bn;
+    }
 }
 
 static void randomize_rects_to_place(void)
@@ -295,10 +407,18 @@ static void randomize_rects_to_place(void)
     SetRandomSeed(GetTime());
     for (size_t i = 0; i < RECTS_TO_PLACE_COUNT; i++)
     {
-        // float w = (RECTS_TO_PLACE_MIN_W + RECTS_TO_PLACE_MAX_W) * 0.5F;
-        // float h = (RECTS_TO_PLACE_MIN_H + RECTS_TO_PLACE_MAX_H) * 0.5F;
-        float w = GetRandomValue(RECTS_TO_PLACE_MIN_W, RECTS_TO_PLACE_MAX_W);
-        float h = GetRandomValue(RECTS_TO_PLACE_MIN_H, RECTS_TO_PLACE_MAX_H);
+        float w, h;
+        if (UNIFORM_SIZE)
+        {
+            w = (RECTS_TO_PLACE_MIN_W + RECTS_TO_PLACE_MAX_W) * 0.5F;
+            h = (RECTS_TO_PLACE_MIN_H + RECTS_TO_PLACE_MAX_H) * 0.5F;
+        }
+        else
+        {
+            w = GetRandomValue(RECTS_TO_PLACE_MIN_W, RECTS_TO_PLACE_MAX_W);
+            h = GetRandomValue(RECTS_TO_PLACE_MIN_H, RECTS_TO_PLACE_MAX_H);
+        }
+
         ctx.rects_to_place[ i ] = (Rect){ .w = w, .h = h };
     }
 }
@@ -349,36 +469,24 @@ static void handle_input(void)
         if (IsKeyPressed(KEY_A))
         {
             ctx.alg_type = ALGORITHM_TYPE_GUILLOTINE;
-            init_g();
+            init();
         }
         else if (IsKeyPressed(KEY_B))
         {
             ctx.alg_type = ALGORITHM_TYPE_SKYLINE;
-            init_s();
+            init();
         }
     }
-    else if (ctx.alg_type == ALGORITHM_TYPE_GUILLOTINE)
+    else
     {
         if (IsKeyPressed(KEY_R))
         {
-            clear_g();
+            clear();
             ctx.alg_type = ALGORITHM_TYPE_NONE;
         }
         else if (IsKeyPressed(KEY_SPACE))
         {
-
-        }
-    }
-    else if (ctx.alg_type == ALGORITHM_TYPE_SKYLINE)
-    {
-        if (IsKeyPressed(KEY_R))
-        {
-            clear_s();
-            ctx.alg_type = ALGORITHM_TYPE_NONE;
-        }
-        else if (IsKeyPressed(KEY_SPACE))
-        {
-            place_rectangle_s();
+            ctx.pause = !ctx.pause;
         }
     }
 }
@@ -389,11 +497,13 @@ static void update(void)
     {
         case ALGORITHM_TYPE_GUILLOTINE:
         {
-            place_rectangle_g();
+            if (!ctx.finish && !ctx.pause && ctx.rects_placed_count < RECTS_TO_PLACE_COUNT)
+                place_rectangle_g();
         } break;
         case ALGORITHM_TYPE_SKYLINE:
         {
-
+            if (!ctx.finish && !ctx.pause && ctx.rects_placed_count < RECTS_TO_PLACE_COUNT)
+                place_rectangle_s();
         } break;
         default: break;
     }
