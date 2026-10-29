@@ -21,9 +21,13 @@ The advance one is an online problem, The list $\{R_1,R_2,R_3,..,R_n\}$ is not k
 
 This problem is NP-Hard and I am not trying to solve it deterministically but i want a good approximation.
 
-### Solution 1 The guillotine algorithm
+### Solution 1 The Guillotine algorithm
 
 You can check out the [wikipidia](https://en.wikipedia.org/wiki/Guillotine_cutting) about it.
+
+### Solution 2 The Skyline algorithm
+
+I could not find a good & simple resource online for that but it is easy to understand you just drop the rectangle on the skyline and find the place where if it falls it will minimize the hieght increament.
 
 ## Quick Start
 
