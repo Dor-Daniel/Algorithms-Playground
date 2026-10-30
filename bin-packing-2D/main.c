@@ -44,7 +44,7 @@
 #define RECTS_TO_PLACE_MIN_H 10
 #define RECTS_TO_PLACE_MAX_H 100
 #define RECTS_PLACED_COLOR RAYWHITE
-#define SHOULD_SORT false
+#define SHOULD_SORT true
 #define UNIFORM_SIZE false
 
 typedef struct Rect {
@@ -178,7 +178,8 @@ static int compare_Rect(const void* a, const void* b)
 {
     Rect r1 = *(Rect*)a;
     Rect r2 = *(Rect*)b;
-    return r2.w * r2.h - r1.w * r1.h; 
+    // return r2.w * r2.h - r1.w * r1.h; 
+    return fmaxf(r2.w, r2.h)  - fmaxf(r1.w, r1.h);
 }
 
 static void init(void)
